@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import React, { useEffect, useState } from 'react';
 import { Image, ScrollView } from 'react-native';
 
@@ -55,18 +54,26 @@ const Dashboard: React.FC = () => {
   const navigation = useNavigation();
 
   async function handleNavigate(id: number): Promise<void> {
-    navigation.navigate('FoodDetails', {
-      id
-    });
+    navigation.navigate('FoodDetails', { id });
   }
 
   useEffect(() => {
     async function loadFoods(): Promise<void> {
-      const { data } = await api.get(
-        `foods?${searchValue ? `name=${searchValue}` : ''}${selectedCategory ? `&category=${selectedCategory}` : ''
-        }`,
+      const response = await api.get<Food[]>('foods', {
+        params: {
+          name_like: searchValue,
+          category_like: selectedCategory,
+        },
+      });
+
+      setFoods(
+        response.data.map((food: Food) => {
+          return {
+            ...food,
+            formattedPrice: formatValue(food.price),
+          };
+        }),
       );
-      setFoods(data);
     }
 
     loadFoods();
@@ -74,20 +81,16 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     async function loadCategories(): Promise<void> {
-      const response = await api.get('categories');
-
-      setCategories(response.data);
+      api.get('categories').then(response => {
+        setCategories(response.data);
+      });
     }
 
     loadCategories();
-  }, []);
+  }, [selectedCategory, searchValue]);
 
   function handleSelectCategory(id: number): void {
-    if (selectedCategory === id) {
-      setSelectedCategory(undefined);
-    } else {
-      setSelectedCategory(id);
-    }
+    setSelectedCategory(selectedCategory === id ? undefined : id);
   }
 
   return (
